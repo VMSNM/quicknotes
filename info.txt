@@ -1,0 +1,13 @@
+<!--
+localhost
+smartce2_admin
+Smartcenter3630 
+smartce2_notes
+-->
+
+<!-- 
+localhost
+root
+''
+notes_app
+ -->
