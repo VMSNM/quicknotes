@@ -1,9 +1,28 @@
 <?php
     include("config.php");
+    if(!isset($_SESSION)) { session_start(); }
 
-    if (isset($_SESSION["user_id"])) {
-        header("Location: dashboard.php", true, 301);
+    if (!isset($_SESSION["user_id"])) {
+        header("Location: index.php", true, 301);
         exit();
+    }    
+
+    $user_id = $_SESSION["user_id"];
+
+    // Fetch the username from the database
+    /* $stmt = $conn->prepare("SELECT username, logged_times, last_login FROM users WHERE id = ?"); */
+    $stmt = $conn->prepare("SELECT username FROM users WHERE id = ?");
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    /* $stmt->bind_result($username, $logged_times, $last_login); */
+    $stmt->bind_result($username);
+    $stmt->fetch();
+    $stmt->close();
+
+    $result = $conn->query("SELECT id, note FROM notes WHERE user_id = " . $_SESSION["user_id"]);
+    $notes = [];
+    while ($row = $result->fetch_assoc()) {
+        $notes[] = $row;
     }
 ?>
 
@@ -28,14 +47,14 @@
         "@context": "https://schema.org",
         "@type": "Organization",
         "name": "Quick Notes Online",
-        "url": "https://quicknotesonline.com",
+        "url": "https://quicknotesonline.com/dashboard.php",
         "logo": "https://quicknotesonline.com/images/quicknotes-logo.png",
         "sameAs": [
             "https://www.instagram.com/quicknotesonline",
             "https://x.com/quicknotesonlin",
             "https://www.linkedin.com/in/quick-notes-online"
         ],
-        "description": "Take your notes anytime, anywhere and save them for later with the Online Notes App.",
+        "description": "Take your notes anytime, anywhere and save them for later with the Online Notes App - User Dashboard",
         "founder": "Vitor Monteiro",
         "foundingDate": "2025-04-15",
         "email": "support@quicknotesonline.com",
@@ -59,12 +78,12 @@
   <!-- Open Graph Meta Tags -->
   <meta property="og:title" content="Quick Notes Online - Take Your Notes Anytime, Anywhere" />
   <meta property="og:description" content="Save your notes instantly with Quick Notes Online. Our simple, easy-to-use online notepad allows you to take and store your notes securely and access them anytime, anywhere." />
-  <meta property="og:url" content="https://quicknotesonline.com" />
+  <meta property="og:url" content="https://quicknotesonline.com/dashboard.php" />
   <meta property="og:type" content="website" />
   <!-- <meta property="og:image" content="https://quicknotesonline.com/images/preview_image.jpg" /> -->
 
   <!-- Canonical Link -->
-  <link rel="canonical" href="https://quicknotesonline.com">
+  <link rel="canonical" href="https://quicknotesonline.com/dashboard.php">
 
   <!-- Favicon & Fonts -->
   <link rel="icon" type="image/x-icon" href="images/quicknotesfavicon.ico">
@@ -75,24 +94,22 @@
   <!-- CSS & JS -->
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.2.0/fonts/remixicon.css">
-  <script src="index.js" defer></script>
+  <script src="dashboard.js" defer></script>
 
   <!-- Google AdSense -->
-  <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3940256099942544" crossorigin="anonymous"></script> -->
+  <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3756200931918777" crossorigin="anonymous"></script> -->
 </head>
+
 <body>
     <main>
-
-        <!-- Modal -->
         <div class="modal" id="modal">
             <div class="modal-overlay" id="modal-overlay"></div>
-            <div class="modal-content">
-                <i class="ri-close-circle-line modal-close" id="modal-close"></i>
-                <p>Sure you want to delete this note?</p>
-                <div class="modal-btns">
-                    <button class="modal-btn modal-btn-confirm" id="modal-btn-confirm">Confirm</button>
-                    <button class="modal-btn modal-btn-cancel" id="modal-btn-cancel">Cancel</button>
-                </div>
+            <div class="modal-content" id="modal-content">
+            </div>
+        </div>
+
+        <div class="toast" id="toast">
+            <div class="toast-content" id="toast-content">
             </div>
         </div>
 
@@ -104,14 +121,46 @@
                      <img src="images/quicknotes-logo-site.png" class="site-logo" alt="Quick Notes Logo" title="Quick Notes Logo" />
                     <h2>Quick Notes <span className="logo-dot">|</span></h2>
                 </a>
+                <h3 class="username">Welcome <?php echo htmlspecialchars($username); ?></h3>
             </div>
-            <div class="site-header-right">
-                <a href="login.php" title="Login to save your notes" class="action-btn">Login</a>
+
+            <!-- Desktop Menu -->
+            <div class="site-header-right dashboard-header-right">
+                <i class="ri-save-3-line action-btn save-to-db" onclick="saveNotesToDatabase();" title='Save to Database'></i>
+                <i class="ri-file-download-line action-btn" onclick="downloadToLocalFile();" title='Download as Excel File'></i>
+                <i class="ri-screenshot-2-line action-btn" onclick="downloadAsPicture();" title='Download as Picture'></i>
+                <i class="ri-logout-box-line action-btn" onclick="openModal('logout');" title='Logout'></i>
+            </div>
+
+            <!-- Mobile Menu -->
+            <div class="mobile-menu">
+                <i class="ri-menu-line menu-btn" id="menu-btn" onclick="" title=''></i>
+
+                <div class="mobile-menu-items" id="mobile-menu-items">
+                    <div class="mobile-item" onclick="saveNotesToDatabase();" title='Save to Database'>
+                        <i class="ri-save-3-line action-btn"></i>
+                        <p>Save to Database</p>
+                    </div>
+
+                    <div class="mobile-item" onclick="downloadToLocalFile();" title='Download as Excel File'>
+                        <i class="ri-file-download-line action-btn"></i>
+                        <p>Download as Excel File</p>
+                    </div>
+
+                    <div class="mobile-item" onclick="downloadAsPicture();" title='Download as Picture'>
+                        <i class="ri-screenshot-2-line action-btn"></i>
+                        <p>Download as Picture</p>
+                    </div>
+                    
+                    <div class="mobile-item" onclick="openModal('logout');" title='Logout'>
+                        <i class="ri-logout-box-line action-btn"></i>
+                        <p>Logout</p>
+                    </div>
+                </div>
             </div>
         </div>
         
-
-        <!-- Color Picker -->
+        <!-- Color picker -->
         <form action="" id="color-chooser">
             <input type="color" id="color" value="#4cc11a" alt="Pick note color" title="Pick note color">
             <button type="button" id="createBtn" alt="Create new note" title="Create new note"><i class="ri-add-line"></i></button>
@@ -139,7 +188,11 @@
         </div>
 
         <!-- Notes List to Populate-->
-        <div id="list"></div>
+        <div id="list">
+            <div id="spinner-box">
+                <div id="spinner" class="spinner"></div>
+            </div>
+        </div>
 
         <!-- Mobile Google Ads Bottom -->
         <div class="mobile-ads-box mobile-ads-box-bottom">
@@ -194,5 +247,19 @@
             </div>
         </div>
     </main>
+
+    <script>
+        let notesData = <?php echo json_encode($notes); ?>;
+        document.addEventListener("DOMContentLoaded", function() { if (notesData[0]?.notes !== '') loadNoteFromDashboard(notesData[0]); });
+    </script>
+
+    <!-- <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const notesData = <?php echo json_encode($notes); ?>;
+            if (notesData[0]?.notes !== '') loadNoteFromDashboard(notesData[0]);
+        });
+    </script> -->
+
+
 </body>
 </html>

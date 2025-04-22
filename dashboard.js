@@ -2,23 +2,23 @@ let color = document.getElementById('color');
 let createBtn = document.getElementById('createBtn');
 let list = document.getElementById('list');
 let notesText = [{}];
-let notes = JSON.parse(localStorage.getItem('unsaved-notes')) || [];
-let notesToPaint = [];
-// Run once to assign initial zIndex values
-notes.forEach((n, idx) => {
-    if (!n.zIndex || n.zIndex < 997) {
-        n.zIndex = 997 + idx;
-    }
-});
-localStorage.setItem('unsaved-notes', JSON.stringify(notes));
+let notes = [];
+let saveBtn = document.getElementById('save-btn');
+let loadBtn = document.getElementById('load-btn');
+let noteIDDB;
 
 let modal = document.getElementById('modal');
 let modalOverlay = document.getElementById('modal-overlay');
 let modalClose = document.getElementById('modal-close');
-let modalBtnConfirm = document.getElementById('modal-btn-confirm');
-let modalBtnCancel = document.getElementById('modal-btn-cancel');
+let modalContent = document.getElementById('modal-content');
 let modalNoteID = null;
 let modalNoteParent = null;
+
+let toast = document.getElementById('toast');
+let toastContent = document.getElementById('toast-content');
+
+let menuBtn = document.getElementById('menu-btn');
+let menuItems = document.getElementById('mobile-menu-items');
 
 const createNote = (noteID, noteColor, noteCont, noteX, noteY, noteZIndex, noteCreatedAt, noteUpdatedAt, noteWidth, noteHeight, fontSize = 16, isBold = false, isItalic = false, noteTextColor = '#eeeeee') => {
     let newNote = document.createElement('div');
@@ -85,7 +85,7 @@ const createNote = (noteID, noteColor, noteCont, noteX, noteY, noteZIndex, noteC
         let noteIndex = notes.findIndex(n => n.id === noteID);
         if (noteIndex !== -1) {
             notes[noteIndex].color = newColor;
-            localStorage.setItem('unsaved-notes', JSON.stringify(notes));
+            localStorage.setItem('saved-notes', JSON.stringify(notes));
         }
     });
 
@@ -96,7 +96,7 @@ const createNote = (noteID, noteColor, noteCont, noteX, noteY, noteZIndex, noteC
         if (noteIndex !== -1) {
             notes[noteIndex][key] = value;
             notes[noteIndex].updatedAt = new Date().toISOString();
-            localStorage.setItem('unsaved-notes', JSON.stringify(notes));
+            localStorage.setItem('saved-notes', JSON.stringify(notes));
         }
     };
 
@@ -119,7 +119,7 @@ const createNote = (noteID, noteColor, noteCont, noteX, noteY, noteZIndex, noteC
         if (noteIndex !== -1) {
             notes[noteIndex].textColor = newColor;
             notes[noteIndex].updatedAt = new Date().toISOString();
-            localStorage.setItem('unsaved-notes', JSON.stringify(notes));
+            localStorage.setItem('saved-notes', JSON.stringify(notes));
         }
     });
 
@@ -291,11 +291,29 @@ const rePaintNotes = () => {
         });
 };
 
-/* -------------------- */
+// Function to update notes on frontend
+const updateNote = (noteID, updatedContent) => {
+    // preserve data
+    let findNote = notes.find(note => note.id == noteID);
+    if (findNote) {
+        findNote.noteContent = updatedContent;
+        findNote.updatedAt = new Date().toISOString();
 
-if (notes.length > 0) rePaintNotes();
+        localStorage.setItem('saved-notes', JSON.stringify(notes));
+    }
+    // end preserve data
+}
 
-// Function for creating new note
+// Function to prepare fetched components
+function loadNoteFromDashboard(noteData) {
+    notes = JSON.parse(noteData.note);
+    localStorage.setItem('saved-notes', JSON.stringify(notes));
+    noteIDDB = noteData.id; // keep the id from database for future save
+
+    rePaintNotes();
+}
+
+// Function to create new note
 createBtn.onclick = () => {
     let noteID = notes.length === 0 ? 1 : parseInt(notes[notes.length - 1].id) + 1;
     const now = new Date().toISOString();
@@ -310,26 +328,83 @@ createBtn.onclick = () => {
         zIndex: maxZ + 1,
         createdAt: now,
         updatedAt: now,
-        width: 250,
-        height: 250
+        width: 215,
+        height: 240
     });
-    localStorage.setItem('unsaved-notes', JSON.stringify(notes));
+    localStorage.setItem('saved-notes', JSON.stringify(notes));
     rePaintNotes();
 }
 
-const updateNote = (noteID, updatedContent) => {
-    // preserve data
-    let findNote = notes.find(note => note.id == noteID);
-    if (findNote) {
-        findNote.noteContent = updatedContent;
-        findNote.updatedAt = new Date().toISOString();
+// Function to send the updated note to the server
+let isSaving = false;
 
-        localStorage.setItem('unsaved-notes', JSON.stringify(notes));
-    }
-    // end preserve data
+function saveNotesToDatabase() {
+    if (isSaving) return; // prevent double click
+    isSaving = true;
+
+    const saveIcons = document.querySelectorAll('.ri-save-3-line');
+    saveIcons.forEach(icon => {
+        icon.classList.remove('ri-save-3-line', 'save-to-db');
+        icon.classList.add('ri-loader-4-line', 'spin');
+    });
+
+    let updatedNote = localStorage.getItem('saved-notes');
+    fetch("update-notes.php", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: "id=" + encodeURIComponent(noteIDDB) + "&note=" + encodeURIComponent(updatedNote)
+    })
+    .then(response => response.text())
+    .then(data => {
+        showToast("Notes saved successfully!", 'success');
+    })
+    .catch(error => {
+        showToast('Some error occurred. Try again.', 'error');
+    })
+    .finally(() => {
+        saveIcons.forEach(icon => {
+            icon.classList.remove('ri-loader-4-line', 'spin');
+            icon.classList.add('ri-save-3-line', 'save-to-db');
+        });
+        isSaving = false;
+    });
 }
 
-// Function for the close note button
+// Function to send the updated note to the server
+function downloadToLocalFile() {
+    let filename = "quick-notes.xlsx";
+
+    // Filter data to only include 'id' and 'noteContent' columns
+    const filteredNotes = notes.map(({ id, noteContent }) => ({ id, noteContent }));
+
+    // Convert filtered data to a worksheet
+    let worksheet = XLSX.utils.json_to_sheet(filteredNotes);
+
+    // Create a new workbook and append the worksheet
+    let workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Notes");
+
+    // Save the file
+    XLSX.writeFile(workbook, filename);
+}
+
+// Function to save as Picture
+function downloadAsPicture() {
+    let element = document.body; // Capture the whole page
+    // Or use: document.getElementById("notesContainer"); for specific area
+
+    html2canvas(element).then(canvas => {
+        let link = document.createElement("a");
+        link.href = canvas.toDataURL("image/png");
+        link.download = "quick-notes.png";
+        link.click();
+    });
+}
+
+// EVENT LISTENERS
+// Delete note button
 document.addEventListener('click', (event) => {
     if (event.target.classList.contains('close')) {
         const noteElem = event.target.closest('.note'); // go up to the full note container
@@ -337,22 +412,15 @@ document.addEventListener('click', (event) => {
 
         if (modalNoteID > -1) {
             modalNoteParent = noteElem;
-            toggleModal();
+            openModal('delete-note');
         }
-    }
-});
+        // end preserve data
+    } 
+})
 
-// Move notes
-let cursor = {
-    x: null,
-    y: null
-}
+let cursor = { x: null, y: null }
 
-let note = {
-    dom: null,
-    x: null,
-    y: null
-}
+let note = { dom: null, x: null, y: null }
 
 document.addEventListener('mousedown', (event) => {
     let resizingNote = null;
@@ -382,7 +450,7 @@ document.addEventListener('mousedown', (event) => {
             note.width = resizingNote.offsetWidth;
             note.height = resizingNote.offsetHeight;
             note.updatedAt = new Date().toISOString();
-            localStorage.setItem('unsaved-notes', JSON.stringify(notes));
+            localStorage.setItem('saved-notes', JSON.stringify(notes));
           }
     
           // Clean up event listeners
@@ -431,25 +499,79 @@ document.addEventListener('mouseup', (event) => {
         findNote.y = note.dom.offsetTop;
         findNote.updatedAt = new Date().toISOString();
 
-        localStorage.setItem('unsaved-notes', JSON.stringify(notes));
+        localStorage.setItem('saved-notes', JSON.stringify(notes));
     }
     note.dom = null;
 });
-// End Move notes
+// END EVENT LISTENERS
 
 // Modal
-const toggleModal = () => modal.classList.toggle('active');
-
-modalBtnConfirm.onclick = () => {
-    notes.splice(modalNoteID, 1);
-    localStorage.setItem('unsaved-notes', JSON.stringify(notes));
-    modalNoteParent.remove();
-    toggleModal();
+const openModal = (action) => {
+    if (action === 'delete-note') {
+        modalContent.innerHTML = `
+            <i class="ri-close-circle-line modal-close" id="modal-close" onclick="closeModal();"></i>
+            <p>Sure you want to delete this note?</p>
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-confirm" id="modal-btn-confirm" onclick="deleteNote();">Confirm</button>
+                <button class="modal-btn modal-btn-cancel" id="modal-btn-cancel" onclick="closeModal();">Cancel</button>
+            </div>
+        `
+    }
+    else if (action === 'logout') {
+        modalContent.innerHTML = `
+            <i class="ri-close-circle-line modal-close" id="modal-close" onclick="closeModal();"></i>
+            <div>
+                <p style="margin-bottom:5px">Make sure to save your notes before leaving.</p>
+                <p>Confirm logout?</p>
+            </div>
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-confirm" id="modal-btn-confirm" onclick="logout();">Confirm</button>
+                <button class="modal-btn modal-btn-cancel" id="modal-btn-cancel" onclick="closeModal();">Cancel</button>
+            </div>
+        `
+    }
+    
+    modal.classList.add('active');
+} 
+const closeModal = () => {
+    modalContent.innerHTML = ``;
+    modal.classList.remove('active');
 }
 
-modalClose.onclick = () => toggleModal();
-modalOverlay.onclick = () => toggleModal();
-modalBtnCancel.onclick = () => toggleModal();
+modalOverlay.onclick = () => closeModal();
+
+const deleteNote = () => {
+    notes.splice(modalNoteID, 1);
+    localStorage.setItem('saved-notes', JSON.stringify(notes));
+    modalNoteParent.remove();
+    closeModal();
+}
+
+const logout = () => {
+    const confirmBtn = document.getElementById('modal-btn-confirm');
+    confirmBtn.innerHTML = `<i class="ri-loader-4-line spin"></i>`;
+    confirmBtn.disabled = true;
+
+    setTimeout(() => {
+        window.location.replace("logout.php");
+    }, 100); // Slight delay so spinner is visible before redirect
+}
+
+// Mobile Menu
+menuBtn.onclick = () => menuItems.classList.toggle('active');
+
+// Toast
+const showToast = (message, status) => {
+    toast.classList.add('active');
+
+    let statusClass = 'toast-content-' + status;
+    toastContent.classList.add(statusClass);
+    toastContent.innerHTML = `<p>${message}</p>`
+
+    setTimeout(() => {
+        toast.classList.remove('active');
+    }, 4000);
+}
 
 //BRING TO FRONT
 document.addEventListener('click', (e) => {
@@ -481,7 +603,7 @@ document.addEventListener('click', (e) => {
 
             noteElem.classList.remove('bump');
 
-            localStorage.setItem('unsaved-notes', JSON.stringify(notes));
+            localStorage.setItem('saved-notes', JSON.stringify(notes));
             rePaintNotes();
         }, 200); // Matches the bump animation duration
     }
@@ -515,7 +637,7 @@ document.addEventListener('click', (e) => {
 
             noteElem.classList.remove('fade-back');
 
-            localStorage.setItem('unsaved-notes', JSON.stringify(notes));
+            localStorage.setItem('saved-notes', JSON.stringify(notes));
             rePaintNotes();
         }, 300); // Matches fade-back animation duration
     }

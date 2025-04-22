@@ -41,7 +41,7 @@ main {
 /* MODAL */
 .modal {
     position: fixed;
-    z-index: 999;
+    z-index: 9999;
     width: 100vw;
     height: 100vh;
     display: flex;
@@ -123,7 +123,7 @@ main {
     top: -50px;
     opacity: 0;
     transition: .8s all ease-in-out;
-    z-index: 1000;
+    z-index: 9999;
 }
 .toast.active {
     top: 50px;
@@ -153,19 +153,21 @@ main {
     min-height: 60px;
     background: rgba(0,0,0,0.2);
     position: relative;
-    z-index: 998;
+    z-index: 10;
 }
 
 .site-header-left { display: flex; flex-direction: row; justify-content: center; align-items: center;gap:5px}
 
 .site-header-left h3 { color: #4cc11a; font-size: 18p; font-weight: normal; }
 
-.site-header-left a {color:#fff; font-weight: normal; transition: .8s all ease-in-out;}
+.site-header-left a {color:#fff; font-weight: normal; display: flex; align-items: center; gap: 6px; transition: .8s all ease-in-out; }
 .site-header-left a:hover {color: #4cc11a;}
 
+.site-logo { height: 50px; width: auto; }
 .site-header-left i { font-weight: normal; }
 
-.site-header-left h2 a span, .site-header-left h3 span {
+.site-header-left a h2 { font-weight: normal; }
+.site-header-left a h2 span, .site-header-left h3 span {
     /* color: #4cc11a; */
     animation: logoAnime 1.5s ease-in-out infinite;
 }
@@ -238,6 +240,7 @@ i {font-size: 24px;}
     top: 0;
     opacity: 0;
     transition: .5s all ease-in-out;
+    z-index: 9998;
 }
 
 .mobile-menu-items.active {
@@ -302,50 +305,169 @@ form input::-webkit-color-swatch {
     box-shadow: none;
 }
 
-.ads-box {
-    width: 100%;
-    display: flex;
-    justify-content: center;
+form input::-moz-color-swatch {
+    border-radius: 50%;
+    border: 1px solid #fff;
+    box-shadow: none;
 }
 
-.google-ads1, .google-ads2 {
-    width: 728px;
-    height: 90px;
-    background: #fff;
-    margin: 0 auto;
-    position: absolute;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 99;
-}
-
-.google-ads1 { display: none; }
-.google-ads2 { bottom: 80px; }
-
-#list textarea {
-    all: unset;
-    color: #d6d6d6;
-}
-
+/* NOTE CSS */
 #list .note {
+    display: flex;
+    flex-direction: column;
     background-color: #333;
-    width: max-content;
-    border-top: 30px solid #fff183;
     border-radius: 10px;
     box-shadow: 0 20px 50px #0004;
-    padding: 10px;
+    /* padding: 10px; */
     position: absolute;
-    top: 60px;
-    left: 50px;
-    /* z-index: 997; */
+    min-width: 200px;
+    min-height: 120px;
+    box-sizing: border-box;
 }
 
-#list .note .close {
+.note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--note-color); /* gets overridden inline */
+    padding: 6px 10px;
+    /* border-bottom: 1px solid #ccc; */
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    cursor:move;
+}
+
+.note-header.fade-color {
+    transition: background-color 0.5s ease;
+}
+
+.note-controls { display: flex; align-items: flex-end; gap: 3px;}
+
+.note-controls button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: .8s all ease-in-out;
+}
+
+/* .note-controls button:hover { transform: scale(1.1); } */
+
+.note-palette, .text-palette { 
+    position: relative;
+}
+
+.note-palette-icon { font-size: 1.25rem; margin-bottom: 1px; }
+.text-palette-icon i, .text-palette-input, .note-settings-icon i {font-size: 1.5rem;}
+.text-palette-icon i { text-shadow: 1px 1px 1px #000; }
+
+.note-palette-icon:hover, .text-palette-icon:hover { transform: scale(1.1); }
+
+.note-palette-input, .text-palette-input {
     position: absolute;
-    top: -26px;
-    right: 7px;
-    /* height: 30px; */
+    top: 0;
+    left: 0;
+    padding: 0;
+    opacity: 0;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    border-radius: 50%;
+    appearance: none;
+    outline: none;
+}
+
+.note-palette-input:hover .note-palette-icon { transform: scale(1.1); }
+
+/* Style the color swatch (the color circle part of the picker) */
+.note-palette-input::-webkit-color-swatch {
+    border-radius: 50%;
+    border: 2px solid #eee;
+    box-shadow: none;
+}
+.text-palette-input::-webkit-color-swatch {
+    border-radius: 50%;
+    border: 1px solid #eee;
+    box-shadow: none;
+}
+
+/* For Firefox */
+.note-palette-input::-moz-color-swatch {
+    border-radius: 50%;
+    border: none;
+}
+.text-palette-input::-moz-color-swatch {
+    border-radius: 50%;
+    border: none;
+}
+
+.note-settings {
+    position: relative;
+}
+
+.note-settings-icon, .note-settings-icon i {color: #000;}
+
+.note-settings-dropdown {
+    display: none;
+    position: absolute;
+    cursor: pointer;
+    top: 23px;
+    left: 0;
+    background: white;
+    border: 1px solid #ccc;
+    padding: 4px;
+    z-index: 1000;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.note-settings:hover .note-settings-dropdown {
+    display: block;
+}
+
+.note-style-btn {
+    padding: 3px 6px;
+    cursor: pointer;
+    font-size: 14px;
+    user-select: none;
+}
+
+.bring-front, .send-back {color: #000 !important; font-size: 1.6g358rem; transition: .8s all ease-in-out; }
+
+/* Info button style */
+.info-btn {
+    width: 12px;
+    /* height: 20px; */
+    font-size: 1.3rem !important;
+    line-height: 1.3rem !important;
+    font-weight: bold !important;
+    color: #000 !important;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: white;
+}
+
+/* Tooltip style */
+.tooltip {
+    display: none;
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.75);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    /* max-width: 200px; */
+    white-space: nowrap;
+    z-index: 1999;
+}
+
+/* Show tooltip when hovered */
+.info-btn:hover + .tooltip {
+    display: block;
+}
+
+.info-btn:hover, .bring-front:hover, .send-back:hover { color:#0078d7 !important; }
+
+#list .note .close {
     font-family: cursive;
     font-size: 20px;
     cursor: pointer;
@@ -355,24 +477,138 @@ form input::-webkit-color-swatch {
 
 #list .note .close:hover { color: darkred; }
 
+.note-body { 
+    flex-grow: 1;
+    padding: 10px;
+    /* overflow-y: auto;
+    overflow-x: auto; */
+    position: relative;
+    max-height: calc(100% - 40px); /* Keeps space for header */ 
+}
+
+#list textarea {
+    width: 100%;
+    height: 100%;
+    resize: none; /* Prevent resizing by user */
+    padding: 10px;
+    font-size: 14px;
+    border: none;
+    outline: none;
+    background-color: transparent;
+    overflow-x: auto;
+    color: #eee;
+}
+
+.bottom-controls {
+    display: flex;
+    width: 100%;
+    justify-content: flex-end;
+    align-items: center;
+    /* padding: 2px 4px; */
+    position: absolute;
+    bottom: 7px;
+    right: 7px;
+    gap: 2px;
+}
+
+.emoji-trigger {
+    cursor: pointer;
+    font-size: 1.2em;
+}
+
+.emoji-picker {
+    position: absolute;
+    right: 50px;
+    top: 60px;
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid #555;
+    padding: 8px;
+    border-radius: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    width: 250px;
+    gap: 6px;
+    z-index: 1999;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+}
+
+.emoji-picker span {
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+}
+
+.resize-handle {
+    display: block;
+    position: relative;
+    font-size: 1em;
+    color: #999;
+    cursor: nwse-resize;
+    pointer-events: auto;
+}
+
+.mobile-expand-toggle {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.2em;
+    cursor: pointer;
+}
+
+/* Bring to front animation */
+@keyframes bump {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+  
+.note.bump {
+    animation: bump 0.2s ease;
+}
+  
+/* Send to back animation */
+@keyframes fadeBack {
+    0%   { opacity: 1; transform: scale(1); }
+    50%  { opacity: 0.7; transform: scale(0.95); }
+    100% { opacity: 1; transform: scale(1); }
+}
+  
+.note.fade-back {
+    animation: fadeBack 0.3s ease;
+}  
+/* NOTE CSS */
+
+/* FOOTER */
 .footer {
     width: 100%;
-    position: fixed;
-    z-index: 999;
+    position: absolute;
+    z-index: 10;
     bottom: 0;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
+    gap: 30px;
+    align-items: center;
     background: rgba(0,0,0,0.2);
     color: #fff;
     padding: 20px;
     text-align: center;
 }
 
-.footer .copyright { text-align: center; }
+.footer p { text-align: left !important; }
+.footer p a { color: #4cc11a; transition: .8s all ease-in-out; }
+.footer p a:hover { color: rgb(0, 0, 26); }
 
-.footer a { color: #4cc11a; transition: .8s all ease-in-out; }
+.footer .social {
+    display: flex;
+    gap:5px;
+    justify-content: flex-end;
+    align-items: center;
+}
+.footer .social a { color: #eeeeee; padding: 5px; border-radius: 7px; background: rgba(0,0,0,0.2); transition: .6s all ease-in-out; }
+.footer .social a:hover { background: rgba(255,255,255,0.2); color: #222438; }
 
-.footer a:hover { color: rgb(0, 0, 26); }
+/* FOOTER */
 
 /* AUTH-PAGES */
 .auth-form {
@@ -387,6 +623,8 @@ form input::-webkit-color-swatch {
     gap: 25px;
     justify-content: center;
     align-items: center;
+    position: relative;
+    z-index: 9997;
 }
 
 .auth-form h2 { color: #fff; }
@@ -420,50 +658,204 @@ form input::-webkit-color-swatch {
 }
 
 .auth-form form button:hover { background: transparent; color: #fff; }
+
+.auth-form form p[style*="color:red"] {
+    transition: opacity 0.3s ease;
+}
 /* AUTH-PAGES */
 
-@media screen and (max-width: 900px) {
-    #list { width: 100%; padding: 0 10px 200px 10px;}
+/* GOOGLE ADS */
+.mobile-ads-box {
+    width: calc(100% - 20px);
+    max-width: 728px;
+    height: auto;
+    max-height: 90px;
+    min-height: 60px;
+    display: flex;
+    justify-content: center;
+    /* overflow: hidden; */
+    visibility: visible;
+    margin-left: 10px;
+}
+
+.mobile-ads-box-bottom { position: absolute; bottom: 105px; }
+
+.google-ad-wrapper {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+/* Spinner Styling */
+.ad-loading-spinner {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border: 4px solid #ccc;
+    border-top: 4px solid #4cc11a;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 2;
+}
+  
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.google-ads1, .google-ads2 {
+    width: 100%;
+    max-width: 728px;
+    height: auto;
+    min-height: 60px;
+    max-height: 90px;
+    overflow: hidden;
+    background: #eee;
+    /* border: 1px solid #eee; */
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9;
+    border-radius: 10px;
+}
+
+.google-ads1 { position: relative; margin-top: 7px; }
+.google-ads2 { position: relative;}
+
+/* .google-ads1 a, .google-ads2 a { width: 100%; height: 100%; overflow: hidden; }
+.google-ads1 a img, .google-ads2 a img { width: 100%; height: 100%; } */
+
+.floating-ad {
+    position: fixed;
+    bottom: 90px; /* stays above footer/notes bottom ad */
+    right: 15px;
+    width: 300px;
+    height: 250px;
+    background: #eee;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    z-index: 9997;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    visibility: visible;
+    opacity: 1;
+}
+
+ins.adsbygoogle {
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
+}
+
+/* .floating-ad img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+} */
+
+.close-ad {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 18px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    text-align: center;
+    line-height: 22px;
+    z-index: 6;
+}
+/* GOOGLE ADS */
+
+@media screen and (max-width: 728px) {
+    #list { width: 100%; padding: 0 10px 210px 10px;}
 
     #list .note {
         position: relative;
         left: auto !important;
         top: auto !important;
         width: 100% !important;
+        height: 250px !important;
         margin: 15px 0 auto;
+        transition: height 0.3s ease;
     }
+
+    #list .note.expanded {
+        height: 550px !important;
+    }
+      
+    /* #list .note-body.collapsed {
+        height: 250px !important;
+    } */
+
+    .resize-handle { display: none; }
+    .mobile-expand-toggle { display: block; }
+
+    .floating-ad {
+        visibility: hidden; opacity: 0;
+    }
+
+    .footer { /* position: relative; margin-top: 0px; */ }
+}
+
+/* Loading UI Spinners */
+#spinner-box {
+    display: flex;
+    width: 100%;
+    height: 150px;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+.spinner {
+    border: 2px solid transparent;
+    border-top: 2px solid white;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+/* button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+} */
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+/* Loading UI Spinners */
+
+
+@media screen and (min-width: 729px) { 
+    .mobile-ads-box { display: none; }
 }
 
 @media screen and (max-width: 600px) {
-    .username {margin-left: 30px;}
-    .site-header-left { flex-direction: column; justify-content: flex-start; align-items: flex-start;}
+    .site-header-left { flex-direction: column; justify-content: flex-start; align-items: flex-start; gap: 0px;}
     .site-header-left h3 span { display: none; }
-    /* .action-btn {padding: 4px 7px;}
-    .save-to-db { padding: 6px 10px; } */
-    i { font-size: 20px; }
+    .username {margin-left: 60px;}
+
+    .site-header-left i, .site-header-right i { font-size: 20px; }
 
     .dashboard-header-right { display: none; }
     .mobile-menu {display: block;}
 
-    .auth-form {width: 90%;}
-
-    .ads-box {
-        width: 100%;
-        display: flex;
-        justify-content: center;
-    }
-    
-    .google-ads1 {
-        display: block;
-        margin: 10px 0 auto;
-        position: relative;
-        top: 0;
-    }
-
-    .google-ads a {  }
-
-    .google-ads a img { width: 100%; height: 100%; }
-
+    .auth-form {width: 90%; margin-bottom: 40px;}
 }
 
 /* SCROLLBAR */
@@ -491,3 +883,5 @@ form input::-webkit-color-swatch {
     background: #a7a7a7;
   }
   /* END SCROLLBAR */
+
+  /* .mobile-ads-box, .floating-ad { display: none !important; } */
